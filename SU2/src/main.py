@@ -52,7 +52,7 @@ def drivePID(dist, maxSpd):
     kP = 
     kD = 
     prevError = 0
-    distDeg = dist / 3.25 * 360
+    distDeg = (dist / 3.25) * 360
 
     while(True):
         currentPos = (leftMotorGroup.position + leftMotor.position + rightMotorGroup.position + rightMotor.position) / 4
@@ -68,7 +68,7 @@ def drivePID(dist, maxSpd):
         #voltage calculation
         vol = (error * kP) + (der * kD)
         
-        if vol > maxSpd
+        if vol > maxSpd:
             vol = maxSpd
 
         #set voltage to motors
@@ -81,7 +81,7 @@ def drivePID(dist, maxSpd):
         print(currentPos, error, vol)
 
         #break when reach target
-        if error <  1:
+        if error <  1 and error > -1:
             break
         
     leftMotorGroup.set_position(0, DEGREES)
@@ -133,7 +133,7 @@ def turnPID(theta, lSpd, rSpd):
         print(currentDeg, error, lVol, rVol)
 
         #break when reach target
-        if error < 0.1:
+        if error < 0.1 and error > - 0.1:
             break
     inertial.set_rotation(0, DEGREES)
     return
