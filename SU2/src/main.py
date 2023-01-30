@@ -18,9 +18,9 @@ rightMotor = Motor(Ports.PORT9, GearSetting.RATIO_6_1, True)
 tilter = DigitalOut(brain.three_wire_port.a)
 intake = Motor(Ports.PORT7, GearSetting.RATIO_6_1, False)
 endgame = DigitalOut(brain.three_wire_port.b)
-motor_6 = Motor(Ports.PORT6, GearSetting.RATIO_6_1, False)
 inertial = Inertial(Ports.PORT1)
 rotation_sensor = Encoder(brain.three_wire_port.c)
+flywheel = Motor(Ports.PORT6, GearSetting.RATIO_6_1, True)
 
 
 # wait for rotation sensor to fully initialize
@@ -194,8 +194,37 @@ def intakeControl():
 
         wait(20,MSEC)
 
-def flywheelControl():
-    a = True
+
+    
+def flywheelthread():  # Thread for flywheel
+    targetMin =  330
+    targetShot = 300
+    flyvar = 7
+    while True:
+        # bing bing controller
+        currentRPM = flywheel.velocity(RPM)
+        if currentRPM < targetShot:  # below margin of error
+            vol = flyvar+3
+        elif currentRPM < targetMin:  # below target rpm
+            vol = flyvar
+        else:  # maintain rpm
+            vol = flyvar-1
+        flywheel.spin(FORWARD, vol, VOLT)
+        
+        #changing target voltage
+        if controller_1.buttonUp.pressing() and flyvar < 9:
+            flyvar += 0.25
+            targetMin+= 10
+            targetShot+=10
+        if controller_1.buttonDown.pressing() and flyvar > 1:
+            flyvar -= 0.25
+            targetMin -= 10
+            targetShot -=10
+        #print values
+        controller_1.screen.clear_screen()
+        controller_1.screen.set_cursor(1,1)
+        controller_1.screen.print(vol)
+
 
 def endgameControl():
     while(True):
@@ -225,7 +254,7 @@ def driver_control():
     driveThread = Thread(driveControl)
     tilterThread = Thread(tilterControl)
     intakeThread = Thread(intakeControl)
-    flywheelThread = Thread(flywheelControl)
+    flywheelThread = Thread(flywheelthread)
     endgameThread = Thread(endgameControl)
 
 competition = Competition(driver_control, autonomous)
