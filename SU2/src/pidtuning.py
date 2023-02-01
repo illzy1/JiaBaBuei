@@ -44,8 +44,9 @@ from vex import *
 #CONSTANTS
 ################
 maxVol = 11.5
-kP = 0
-kD = 0
+kP = 0.1
+kD = 0.015
+kI = 0
 turnkP = 0
 turnkI = 0
 turnkD = 0
@@ -56,7 +57,12 @@ turnkD = 0
 def drivePID(dist, maxSpd):
     prevError = 0
     distDeg = (dist / 3.25) * 360
-
+    totalError = 0
+    leftMotorGroup.set_position(0, DEGREES)
+    leftMotor.set_position(0, DEGREES)
+    rightMotorGroup.set_position(0, DEGREES)
+    rightMotor.set_position(0, DEGREES)
+    counter = 0
     while(True):
         currentPos = (leftMotorGroup.position() + leftMotor.position() + rightMotorGroup.position() + rightMotor.position()) / 4
         
@@ -66,10 +72,9 @@ def drivePID(dist, maxSpd):
         #derivative
         der = error - prevError
 
-        preError = error
-    
+        totalError += error
         #voltage calculation
-        vol = (error * kP) + (der * kD)
+        vol = (error * kP) + (der * kD)+ (totalError * kI)
         
         if vol > maxSpd:
             vol = maxSpd
@@ -81,21 +86,27 @@ def drivePID(dist, maxSpd):
         rightMotor.spin(FORWARD, vol, VOLT)
 
         #print values
-        print(currentPos, error, vol)
+        print(currentPos/360*3.25, error, vol, rightMotorGroup.position(DEGREES), leftMotorGroup.position(DEGREES))
 
         #break when reach target
-        if error <  1 and error > -1:
+        if error <  1 and error > -1 and error:
+            if counter >=20:
+                break
+            else:
+                counter +=1
+        else:
+            counter = 0
+        if controller_1.buttonB.pressing():
             break
         
-    leftMotorGroup.set_position(0, DEGREES)
-    leftMotor.set_position(0, DEGREES)
-    rightMotorGroup.set_position(0, DEGREES)
-    rightMotor.set_position(0, DEGREES)
+        prevError = error
+        
+
     return
 
 def turnPID(theta, lSpd, rSpd):
     prevError = 0
-
+    totalError = 0
     while(True):
         currentDeg = inertial.rotation(DEGREES)
 
@@ -131,6 +142,9 @@ def turnPID(theta, lSpd, rSpd):
 
         #print values
         print(currentDeg, error, lVol, rVol)
+        brain.screen.clear_screen()
+        brain.screen.set_cursor(0,0)
+        brain.screen.print(currentDeg, error, lVol, rVol)
 
         #break when reach target
         if error < 0.1 and error > - 0.1:
@@ -144,15 +158,18 @@ def intakeSpin(deg):
         if rotation_sensor.position(DEGREES) == deg - 3:
             intake.stop()
 
+
+
+
 ################
 #COMPETITION
 ################
 def pre_autonomous():
-    leftMotorGroup.set_stopping(HOLD)
-    leftMotor.set_stopping(HOLD)
-    rightMotorGroup.set_stopping(HOLD)
-    rightMotor.set_stopping(HOLD)
-    intake.set_stopping(COAST)
+    leftMotorGroup.set_stopping(BRAKE)
+    leftMotor.set_stopping(BRAKE)
+    rightMotorGroup.set_stopping(BRAKE)
+    rightMotor.set_stopping(BRAKE)
+    intake.set_stopping(BRAKE)
 
 def autonomous():
     #drivePID(dist, maxVol) ; turnPID(theta, lSpd, rSpd) ; intakeSpin(deg)
@@ -160,19 +177,20 @@ def autonomous():
     s=True
 
 def driver_control():
-    if controller_1.buttonA.pressing():
-        intake.spin(FORWARD, 11, VOLT)
-        drivePID(48, 10)
-        intake.stop()
-    
-    if controller_1.buttonUp.pressing():
-        kP += 0.05
-    elif controller_1.buttonDown.pressing():
-        kD += 0.05
-    elif controller_1.buttonRight.pressing():
-        turnkP += 0.05
-    elif controller_1.buttonLeft.pressing():
-        turnkD += 0.05
-
+    while(True):
+        
+        if controller_1.buttonA.pressing():
+            intake.spin(FORWARD, 11, VOLT)
+            drivePID(24, 8)
+            intake.stop()
+        
+        if controller_1.buttonUp.pressing():
+            kP += 0.05
+        if controller_1.buttonDown.pressing():
+            kP -= 0.05
+        if controller_1.buttonRight.pressing():
+            kD += 0.05
+        if controller_1.buttonLeft.pressing():
+            kD -= 0.05
 competition = Competition(driver_control, autonomous)
 pre_autonomous()
