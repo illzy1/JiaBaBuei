@@ -266,7 +266,7 @@ def tilterControl():
 def intakeControl():
     while(True):
         if controller_1.buttonR1.pressing():
-            intake.spin(FORWARD, 11, VOLT)
+            intake.spin(FORWARD, 9.5, VOLT)
         elif controller_1.buttonR2.pressing():
             intake.spin(REVERSE, 11, VOLT)
         else:
